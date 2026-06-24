@@ -1,4 +1,6 @@
-# React + TypeScript + Vite
+# task-frontend
+
+React + TypeScript + Vite project for task manager.
 
 This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
 
