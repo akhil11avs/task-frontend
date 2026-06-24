@@ -1,34 +1,104 @@
-# task-frontend
+# Taskify Frontend - Real-Time Dashboard UI
 
-React + TypeScript + Vite project for task manager.
+This is the frontend client web application for **Taskify**, built using **Vite, React, TypeScript, and Material UI (MUI)**. It integrates **Zustand** for local state management, **TanStack React Query** for server-side state synchronization, and **Socket.IO Client** for real-time update notifications.
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+---
 
-Currently, two official plugins are available:
+## 🚀 Setup & Local Development
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+### Prerequisites
+* **Node.js** (v18.x or higher)
+* **npm** (v9.x or higher)
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+### 1. Installation
+Navigate to the `frontend/` directory and install the required dependencies:
+```bash
+cd frontend
+npm install
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+### 2. Environment Variables Configuration
+Create a `.env` file in the `frontend/` directory:
+```env
+VITE_API_URL=http://localhost:5001/api
+VITE_SOCKET_URL=http://localhost:5001
+```
+* `VITE_API_URL`: The entry point for the REST API calls.
+* `VITE_SOCKET_URL`: The Socket.IO server host for real-time subscription channels.
+
+### 3. Run the Development Server
+To launch Vite's hot-reloading development server:
+```bash
+npm run dev
+```
+The app will run locally (typically at `http://localhost:3000` or `http://localhost:5173` depending on configuration).
+
+### 4. Build for Production
+To compile typescript types and bundle static assets into the optimized production directory `dist/`:
+```bash
+npm run build
+```
+You can preview the compiled assets locally using:
+```bash
+npm run preview
+```
+
+### 5. Code Linting
+Run Oxlint for rapid static analysis checks:
+```bash
+npm run lint
+```
+
+---
+
+## 🛠️ Architecture Decisions
+
+### 1. Modern Glassmorphic Dark UI Theme
+* Configured a custom dark palette using MUI Theme Provider (`src/App.tsx`) with modern indigo and pink highlight accents, radial backgrounds, and customized typography using the Google Font **Outfit**.
+* Standardizes button variants, list layout sheets, forms, and dialog wrappers to achieve a premium UI/UX.
+
+### 2. Specialized State Management Strategy
+The client segregates state into distinct categories:
+* **Server State (TanStack React Query)**: Handles all queries, mutation payloads, loading indicators, error states, and automatic request retries. Keep cache files clean and optimized.
+* **Client UI State (Zustand)**: Manages local pagination thresholds, active status filters, search queries, and real-time state mirroring.
+
+### 3. Real-Time Socket Synchronization Flow
+To maintain synchronization across multiple browser tabs without spamming request intervals:
+1. When a task status is changed by any client, the backend broadcasts a `task:statusChanged` message.
+2. The socket client (`src/socket/socket.ts`) intercepts this signal.
+3. It immediately invokes `updateTaskStatusLocal()` on the Zustand store to change the task status instantly on the user's screen.
+4. It triggers `queryClient.invalidateQueries({ queryKey: ['tasks'] })`, forcing a background network fetch. This validates that filters, pagination, and server order remain perfectly accurate.
+5. It dispatches a custom JavaScript DOM Event (`taskStatusNotification`) which prompts premium toast alerts.
+
+---
+
+## 📈 Production Scalability Recommendations
+
+1. **CDN Edge Deployments**
+   Since the build output consists of static HTML, CSS, and JS files, deploy the `dist/` directory directly to global Edge Content Delivery Networks (e.g., Netlify, Vercel, AWS CloudFront, or Cloudflare Pages) to achieve sub-millisecond download times worldwide.
+
+2. **Route and Component Code Splitting**
+   Employ `React.lazy` and `React.Suspense` dynamic imports to load heavy components (such as task tables, charting components, or modal managers) only when needed, minimizing initial bundle size.
+
+3. **Progressive Web App (PWA) Integration**
+   Integrate `vite-plugin-pwa` to register service workers. This caches web resources locally to allow offline access and enables browser push notifications.
+
+4. **Robust Content Security Policy (CSP)**
+   Enforce CSP headers via Nginx or Cloudflare (e.g., blocking inline scripts, configuring whitelist domains for Socket connections) to protect users from Cross-Site Scripting (XSS) and script injections.
+
+5. **Comprehensive E2E Testing**
+   Set up Cypress or Playwright tests to replicate user interactions (creating, filtering, and modifying status) and assert that WebSockets update the browser UI correctly in real time across simulated dual-browsers.
+
+---
+
+## ⚖️ Trade-offs Made
+
+* **Heavy MUI Dependency**
+  * **Trade-off**: The interface relies on Material-UI elements.
+  * **Reasoning**: Speeds up development and ensures responsive styling patterns, but increases total initial javascript bundle weights.
+* **Optimistic Local Invalidation Loop**
+  * **Trade-off**: The Socket handler updates Zustand state locally and also invalidates the React Query cache.
+  * **Reasoning**: This "hybrid" approach ensures the UI responds instantly, but triggers a full network fetch to sync. If multiple status changes occur simultaneously, it can lead to redundant HTTP refresh calls.
+* **Client-Side Filters & Pagination Sync**
+  * **Trade-off**: Search text and state filters are sent as query parameters, but WebSocket status broadcasts update any visible rows instantly.
+  * **Reasoning**: If a user is filtering by "pending" and a task changes to "completed", the item remains on screen until the background query invalidates and filters it out. This ensures UI stability during edits, but can momentarily show mismatching status rows.
