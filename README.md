@@ -18,13 +18,11 @@ npm install
 ```
 
 ### 2. Environment Variables Configuration
-Create a `.env` file in the `frontend/` directory:
-```env
-VITE_API_URL=http://localhost:5001/api
-VITE_SOCKET_URL=http://localhost:5001
+Copy the template environment file to `.env` and configure the variables accordingly:
+```bash
+cp .env.example .env
 ```
-* `VITE_API_URL`: The entry point for the REST API calls.
-* `VITE_SOCKET_URL`: The Socket.IO server host for real-time subscription channels.
+Refer to `.env.example` for the list of required variables.
 
 ### 3. Run the Development Server
 To launch Vite's hot-reloading development server:
