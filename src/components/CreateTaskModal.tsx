@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -27,6 +27,15 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ open, onClose,
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState<TaskStatus>('pending');
   const [errorMsg, setErrorMsg] = useState('');
+
+  useEffect(() => {
+    if (open) {
+      setTitle('');
+      setDescription('');
+      setStatus('pending');
+      setErrorMsg('');
+    }
+  }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
